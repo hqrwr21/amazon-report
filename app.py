@@ -64,7 +64,7 @@ def fetch_all_records(table, select="*", eq_col=None, eq_val=None, in_col=None, 
         
     return all_data
 
-st.title("E-Commerce Listing Monitor")
+st.title("Listing Monitor")
 st.markdown("Track, visualize, and protect your Amazon catalog from unauthorized modifications.")
 
 tab_dump, tab_compare, tab_dashboard, tab_catalog, tab_deepdive, tab_alldata, tab_editor = st.tabs([
@@ -79,7 +79,7 @@ tab_dump, tab_compare, tab_dashboard, tab_catalog, tab_deepdive, tab_alldata, ta
 
 # --- TAB 1: DATA INGESTION & MANAGEMENT ---
 with tab_dump:
-    st.header("Catalog Snapshot Ingestion")
+    st.header("Data Ingestion")
     st.write("Upload your monthly or weekly Amazon CSV exports to generate a baseline.")
     
     uploaded_files = st.file_uploader("Upload CSVs", type=["csv"], accept_multiple_files=True)
@@ -148,7 +148,7 @@ with tab_compare:
         with col2:
             new_file = st.selectbox("Target Snapshot (Newer)", saved_files, index=len(saved_files)-1)
             
-        if st.button("Run Catalog Comparison"):
+        if st.button("Run Comparison"):
             st.write("---")
             
             with st.spinner("Pulling data from database (this may take a moment for large files)..."):
@@ -203,7 +203,7 @@ with tab_compare:
                 health_score = round(((total_monitored - items_changed) / total_monitored) * 100, 1) if total_monitored > 0 else 0
 
                 kpi1, kpi2, kpi3 = st.columns(3)
-                kpi1.metric("Total ASINs Monitored", total_monitored)
+                kpi1.metric("Total ASINs", total_monitored)
                 kpi2.metric("ASINs Altered", items_changed, f"-{items_changed} from baseline", delta_color="inverse")
                 kpi3.metric("Catalog Health Score", f"{health_score}%")
                 
@@ -211,9 +211,9 @@ with tab_compare:
                     st.session_state['pending_changes'] = changes
                     st.session_state['current_compare'] = new_file
                     st.session_state['previous_compare'] = old_file
-                    st.warning(f"Detected {len(changes)} total unauthorized modifications across {items_changed} ASINs.")
+                    st.warning(f"Detected {len(changes)} total modifications across {items_changed} ASINs.")
                 else:
-                    st.success("Catalog is perfectly synchronized. No unauthorized changes detected.")
+                    st.success("Catalog is perfectly synchronized. No changes detected.")
                     st.session_state['pending_changes'] = []
 
         if 'pending_changes' in st.session_state and st.session_state['pending_changes']:
@@ -300,6 +300,17 @@ with tab_dashboard:
                 },
                 hide_index=True,
                 use_container_width=True
+            )
+
+            # --- NEW: Export Report Button ---
+            st.write("")
+            csv_export = df_filtered[['asin', 'field_changed', 'old_value', 'new_value']].to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="Download Report as CSV (Ready for Google Sheets)",
+                data=csv_export,
+                file_name=f"{selected_report}_Report.csv",
+                mime="text/csv",
+                type="primary"
             )
 
             st.divider()
